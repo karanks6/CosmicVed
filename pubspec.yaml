@@ -1,0 +1,97 @@
+name: cosmic_ved
+description: CosmicVed — Vedic Astrology & Numerology Companion
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State Management
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # Navigation
+  go_router: ^14.2.7
+
+  # Local Storage
+  sqflite: ^2.3.3+1
+  path: ^1.9.0
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.3.2
+
+  # Networking (API fallback)
+  dio: ^5.7.0
+  connectivity_plus: ^6.0.5
+
+  # Code Generation
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+
+  # PDF Generation
+  pdf: ^3.11.1
+  printing: ^5.13.2
+
+  # Animations
+  lottie: ^3.1.2
+  rive: ^0.13.17
+  flutter_animate: ^4.5.0
+
+  # Charts & Visualizations
+  fl_chart: ^0.68.0
+
+  # UI & Icons
+  flutter_svg: ^2.0.10+1
+  google_fonts: ^6.2.1
+  shimmer: ^3.0.0
+  percent_indicator: ^4.2.3
+  flutter_staggered_animations: ^1.1.1
+
+  # Utilities
+  path_provider: ^2.1.4
+  archive: ^3.6.1
+  permission_handler: ^11.3.1
+  local_auth: ^2.3.0
+  intl: ^0.20.2
+  timezone: ^0.9.4
+  collection: ^1.18.0
+  equatable: ^2.0.5
+  uuid: ^4.4.2
+  logger: ^2.4.0
+  rxdart: ^0.28.0
+  flutter_displaymode: ^0.7.0
+  html: ^0.15.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.12
+  freezed: ^2.5.7
+  json_serializable: ^6.8.0
+  riverpod_generator: ^2.4.3
+  flutter_launcher_icons: ^0.14.4
+
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/lottie/
+    - assets/svg/
+    - assets/images/
+    - assets/data/
+    - assets/data/geonames.db
+
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/icon/CosmicVed_logo.png"
+  min_sdk_android: 21
