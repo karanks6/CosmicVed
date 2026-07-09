@@ -13,6 +13,7 @@ import '../../../models/user_profile.dart';
 import '../../../repositories/profile_repository.dart';
 import '../../../constants/app_constants.dart';
 import '../../../widgets/cosmic_time_picker.dart';
+import '../../dashboard/screens/dashboard_screen.dart';
 
 class ProfileSetupScreen extends ConsumerStatefulWidget {
   final bool isFirstProfile;
@@ -122,6 +123,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen>
     result.when(
       success: (id) async {
         await _repo.setActiveProfile(id);
+        ref.invalidate(activeProfileProvider);
+        
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool(AppConstants.keyOnboardingDone, true);
         if (!mounted) return;

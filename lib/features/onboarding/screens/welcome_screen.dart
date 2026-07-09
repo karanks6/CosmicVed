@@ -85,35 +85,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 6),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
-                                  color: CosmicColors.gold.withValues(alpha: 0.1),
-                                  border: Border.all(
-                                    color: CosmicColors.gold.withValues(alpha: 0.3),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Text('✨', style: TextStyle(fontSize: 14)),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'Ancient Wisdom, Modern App',
-                                      style: TextStyle(
-                                        fontFamily: CosmicTypography.inter,
-                                        fontSize: 12,
-                                        color: CosmicColors.gold,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              const SizedBox(height: 24),
 
                               ShaderMask(
                                 shaderCallback: (bounds) =>
@@ -200,17 +171,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       onPressed: () => context.go(
                         AppRoutes.profileSetup,
                         extra: {'first': true},
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      '100% Offline • Privacy First • No Account Required',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: CosmicTypography.inter,
-                        fontSize: 11,
-                        color: CosmicColors.textLow,
-                        letterSpacing: 0.3,
                       ),
                     ),
                   ],
