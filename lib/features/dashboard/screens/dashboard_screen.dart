@@ -10,7 +10,6 @@ import '../../../models/models.dart';
 import '../../../models/user_profile.dart';
 import '../../../repositories/profile_repository.dart';
 import '../../../repositories/astrology_repository.dart';
-import '../../../services/astrology/panchang_service.dart';
 
 // ─── Providers ─────────────────────────────────────────────────────────────
 
@@ -235,41 +234,53 @@ class _DashboardContent extends ConsumerWidget {
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              // ── Today's Panchang card ──
-              panchangAsync.when(
-                loading: () => _SectionSkeleton(height: 160),
-                error: (_, __) => const SizedBox.shrink(),
-                data: (panchang) => panchang != null
-                    ? _PanchangCard(panchang: panchang)
-                    : const SizedBox.shrink(),
-              ),
-
-              const SizedBox(height: 16),
-
-              // ── Quick Actions ──
-              _SectionHeader(title: 'Explore', onSeeAll: null),
-              const SizedBox(height: 12),
-              _QuickActionsGrid(),
-
-              const SizedBox(height: 16),
-
-              // ── Kundali Summary ──
-              kundaliAsync.when(
-                loading: () => _SectionSkeleton(height: 120),
-                error: (_, __) => const SizedBox.shrink(),
-                data: (kundali) => kundali != null
-                    ? _KundaliSummaryCard(kundali: kundali, profile: profile)
-                    : const SizedBox.shrink(),
-              ),
-
-              const SizedBox(height: 16),
-
-              // ── Daily wisdom quote ──
-              _DailyWisdomCard(dayOfYear: now.difference(DateTime(now.year)).inDays),
-
-              const SizedBox(height: 100),
-            ]),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                switch (index) {
+                  case 0:
+                    return RepaintBoundary(
+                      child: panchangAsync.when(
+                        loading: () => _SectionSkeleton(height: 160),
+                        error: (_, __) => const SizedBox.shrink(),
+                        data: (panchang) => panchang != null
+                            ? _PanchangCard(panchang: panchang)
+                            : const SizedBox.shrink(),
+                      ),
+                    );
+                  case 1: return const SizedBox(height: 16);
+                  case 2:
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _SectionHeader(title: 'Explore', onSeeAll: null),
+                        const SizedBox(height: 12),
+                        const _QuickActionsGrid(),
+                      ],
+                    );
+                  case 3: return const SizedBox(height: 16);
+                  case 4:
+                    return RepaintBoundary(
+                      child: kundaliAsync.when(
+                        loading: () => _SectionSkeleton(height: 120),
+                        error: (_, __) => const SizedBox.shrink(),
+                        data: (kundali) => kundali != null
+                            ? _KundaliSummaryCard(kundali: kundali, profile: profile)
+                            : const SizedBox.shrink(),
+                      ),
+                    );
+                  case 5: return const SizedBox(height: 16);
+                  case 6:
+                    return RepaintBoundary(
+                      child: _DailyWisdomCard(
+                        dayOfYear: now.difference(DateTime(now.year)).inDays,
+                      ),
+                    );
+                  case 7: return const SizedBox(height: 100);
+                  default: return null;
+                }
+              },
+              childCount: 8,
+            ),
           ),
         ),
       ],

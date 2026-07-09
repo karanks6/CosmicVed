@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/color_scheme.dart';
 import '../theme/app_decorations.dart';
@@ -32,42 +31,43 @@ class CosmicCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    Widget card = ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-        child: Container(
-          decoration: gradient != null
-              ? BoxDecoration(
-                  borderRadius: BorderRadius.circular(borderRadius),
-                  gradient: gradient,
-                  border: Border.all(
-                    color: CosmicColors.gold.withValues(alpha: 0.2),
-                    width: 1,
-                  ),
+    // BackdropFilter.blur was removed — multiple simultaneous blur filters are
+    // the #1 cause of GPU frame drops in Flutter. The solid card design is
+    // visually nearly identical but costs a fraction of the GPU budget.
+    Widget card = Container(
+      decoration: gradient != null
+          ? BoxDecoration(
+              borderRadius: BorderRadius.circular(borderRadius),
+              gradient: gradient,
+              border: Border.all(
+                color: CosmicColors.gold.withValues(alpha: 0.2),
+                width: 1,
+              ),
+            )
+          : isDark
+              ? CosmicDecorations.glassCard(
+                  borderRadius: borderRadius,
+                  tint: tint,
+                  glowGold: glowGold,
                 )
-              : isDark
-                  ? CosmicDecorations.glassCard(
-                      borderRadius: borderRadius,
-                      tint: tint,
-                      glowGold: glowGold,
-                    )
-                  : CosmicDecorations.lightGlassCard(
-                      borderRadius: borderRadius,
-                    ),
-          padding: padding,
-          child: child,
-        ),
-      ),
+              : CosmicDecorations.lightGlassCard(
+                  borderRadius: borderRadius,
+                ),
+      padding: padding,
+      child: child,
     );
 
     if (onTap != null) {
-      card = InkWell(
-        onTap: onTap,
+      card = Material(
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(borderRadius),
-        splashColor: CosmicColors.gold.withValues(alpha: 0.1),
-        highlightColor: CosmicColors.gold.withValues(alpha: 0.05),
-        child: card,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(borderRadius),
+          splashColor: CosmicColors.gold.withValues(alpha: 0.1),
+          highlightColor: CosmicColors.gold.withValues(alpha: 0.05),
+          child: card,
+        ),
       );
     }
 

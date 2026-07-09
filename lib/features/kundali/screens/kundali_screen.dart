@@ -293,7 +293,7 @@ class _PlanetRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = AstrologyConstants.planetColors[index];
+    final color = AstrologyConstants.getColorForPlanet(planet.name);
     const rashis = [
       'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
       'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces',

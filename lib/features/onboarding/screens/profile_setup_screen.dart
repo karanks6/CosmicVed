@@ -12,6 +12,7 @@ import '../../../models/models.dart';
 import '../../../models/user_profile.dart';
 import '../../../repositories/profile_repository.dart';
 import '../../../constants/app_constants.dart';
+import '../../../widgets/cosmic_time_picker.dart';
 
 class ProfileSetupScreen extends ConsumerStatefulWidget {
   final bool isFirstProfile;
@@ -602,29 +603,13 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen>
 
           const SizedBox(height: 16),
 
-          // Time of birth
+          // Time of birth — uses custom picker to avoid M3 PageView dial conflict
           _InputTile(
             label: 'Time of Birth',
             value: _tob.format(context),
             icon: Icons.access_time_rounded,
             onTap: () async {
-              final picked = await showTimePicker(
-                context: context,
-                initialTime: _tob,
-                initialEntryMode: TimePickerEntryMode.dial,
-                builder: (context, child) => Theme(
-                  data: Theme.of(context).copyWith(
-                    useMaterial3: false, // Disables M3's swipe-to-switch hour/minute tabs
-                    colorScheme: const ColorScheme.dark(
-                      primary: CosmicColors.gold,
-                      surface: CosmicColors.bgCard,
-                      onSurface: CosmicColors.textHigh,
-                      onPrimary: CosmicColors.bgDeep,
-                    ),
-                  ),
-                  child: child!,
-                ),
-              );
+              final picked = await CosmicTimePicker.show(context, _tob);
               if (picked != null) setState(() => _tob = picked);
             },
           ),

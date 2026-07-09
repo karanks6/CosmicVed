@@ -30,6 +30,23 @@ abstract final class AstrologyConstants {
     CosmicColors.ketu,
   ];
 
+  static Color getColorForPlanet(String name) {
+    switch (name.toLowerCase()) {
+      case 'ascendant':
+      case 'lagna': return CosmicColors.gold;
+      case 'sun': return CosmicColors.sun;
+      case 'moon': return CosmicColors.moon;
+      case 'mars': return CosmicColors.mars;
+      case 'mercury': return CosmicColors.mercury;
+      case 'jupiter': return CosmicColors.jupiter;
+      case 'venus': return CosmicColors.venus;
+      case 'saturn': return CosmicColors.saturn;
+      case 'rahu': return CosmicColors.rahu;
+      case 'ketu': return CosmicColors.ketu;
+      default: return CosmicColors.textMed;
+    }
+  }
+
   // Planet indices
   static const int sun = 0;
   static const int moon = 1;
