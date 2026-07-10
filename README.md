@@ -2,7 +2,7 @@
 
 ![CosmicVed Logo](assets/icon/CosmicVed_logo.png)
 
-**CosmicVed** is a beautifully designed, 100% offline-first Flutter application that brings the ancient wisdom of Vedic Astrology and Chaldean Numerology into the modern era. The app is crafted with a focus on deep astrological insights, premium user experience, and absolute privacy.
+**CosmicVed** is a beautifully designed Flutter application that brings the ancient wisdom of Vedic Astrology and Chaldean Numerology into the modern era. The app is crafted with a focus on deep astrological insights, premium user experience, and absolute privacy.
 
 ---
 
