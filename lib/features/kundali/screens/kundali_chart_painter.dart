@@ -65,13 +65,27 @@ class KundaliChartPainter extends CustomPainter {
       _drawText(
         canvas,
         '${rashiInHouse + 1}',
-        Offset(center.dx, center.dy - 10),
-        const TextStyle(
-          color: CosmicColors.textLow,
+        Offset(center.dx, center.dy - 12),
+        TextStyle(
+          color: CosmicColors.gold.withValues(alpha: 0.6),
           fontSize: 12,
           fontFamily: 'Inter',
         ),
       );
+
+      // Lagna (Ascendant) marker for 1st House
+      if (i == 0) {
+        _drawText(
+          canvas,
+          'Asc',
+          Offset(center.dx, center.dy - 26),
+          TextStyle(
+            color: CosmicColors.gold.withValues(alpha: 0.9),
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+          ),
+        );
+      }
 
       // Planets
       if (planetsHere.isNotEmpty) {

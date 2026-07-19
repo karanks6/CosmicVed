@@ -4,7 +4,8 @@ import '../../../theme/color_scheme.dart';
 import '../../../theme/typography.dart';
 import '../../../widgets/star_field_background.dart';
 import '../../../widgets/cosmic_card.dart';
-import '../../../services/ephemeris/ephemeris_service.dart';
+import '../../../services/astrology/astrology_api_service.dart';
+import '../../../models/models.dart';
 import '../../dashboard/screens/dashboard_screen.dart';
 
 // ─── Remedy Data Model ──────────────────────────────────────────────────────
@@ -206,79 +207,90 @@ class _PersonalizedRemedies extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final kundali = EphemerisService.instance.calculateKundali(
-      birthDateTimeUtc: (profile.dateOfBirth as DateTime).toUtc(),
-      latitude: profile.latitude as double,
-      longitude: profile.longitude as double,
-    );
+    return FutureBuilder<Kundali?>(
+      future: AstrologyApiService.instance.fetchKundali(profile),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: CosmicColors.gold));
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}', style: TextStyle(color: Colors.white)));
+        }
+        
+        final kundali = snapshot.data;
+        if (kundali == null) {
+          return const Center(child: Text('Failed to calculate chart.', style: TextStyle(color: Colors.white)));
+        }
 
-    final weakPlanets = kundali.planets
-        .where((p) => p.isDebilitated || p.isRetrograde)
-        .map((p) => p.name)
-        .toList();
+        final weakPlanets = kundali.planets
+            .where((p) => p.isDebilitated || p.isRetrograde)
+            .map((p) => p.name)
+            .toList();
 
-    final ascLordName = _ascendantLordName(kundali.ascendantRashiIndex);
+        final ascLordName = _ascendantLordName(kundali.ascendantRashiIndex);
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-      children: [
-        CosmicGradientCard(
-          colors: const [Color(0xFF0F1B3D), Color(0xFF2D1B69)],
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+          children: [
+            CosmicGradientCard(
+              colors: const [Color(0xFF0F1B3D), Color(0xFF2D1B69)],
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('🕉️', style: TextStyle(fontSize: 28)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Personalized Remedies',
-                          style: TextStyle(fontFamily: CosmicTypography.cinzel, fontSize: 15, color: CosmicColors.gold, fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 2),
-                        Text('Based on ${profile.name}\'s birth chart',
-                          style: TextStyle(fontFamily: CosmicTypography.inter, fontSize: 11, color: CosmicColors.textMed)),
-                      ],
-                    ),
+                  Row(
+                    children: [
+                      const Text('🕉️', style: TextStyle(fontSize: 28)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Personalized Remedies',
+                              style: TextStyle(fontFamily: CosmicTypography.cinzel, fontSize: 15, color: CosmicColors.gold, fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 2),
+                            Text('Based on ${profile.name}\'s birth chart',
+                              style: TextStyle(fontFamily: CosmicTypography.inter, fontSize: 11, color: CosmicColors.textMed)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      _Chip('↑ ${kundali.ascendantSign}'),
+                      _Chip('☽ ${kundali.moonSign}'),
+                      _Chip('⚡ $ascLordName'),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                children: [
-                  _Chip('↑ ${kundali.ascendantSign}'),
-                  _Chip('☽ ${kundali.moonSign}'),
-                  _Chip('⚡ $ascLordName'),
-                ],
-              ),
+            ),
+            const SizedBox(height: 20),
+
+            if (weakPlanets.isNotEmpty) ...[
+              _SectionTitle('Priority Remedies', 'Debilitated or retrograde planets'),
+              const SizedBox(height: 12),
+              ...weakPlanets.map((p) {
+                final r = _remedyData[p];
+                if (r == null) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _RemedyCard(remedy: r, badge: 'Needs Attention'),
+                );
+              }),
+              const SizedBox(height: 16),
             ],
-          ),
-        ),
-        const SizedBox(height: 20),
 
-        if (weakPlanets.isNotEmpty) ...[
-          _SectionTitle('Priority Remedies', 'Debilitated or retrograde planets'),
-          const SizedBox(height: 12),
-          ...weakPlanets.map((p) {
-            final r = _remedyData[p];
-            if (r == null) return const SizedBox.shrink();
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _RemedyCard(remedy: r, badge: 'Needs Attention'),
-            );
-          }),
-          const SizedBox(height: 16),
-        ],
-
-        _SectionTitle('Lagna Lord Remedy', 'Strengthen your ascendant ruler'),
-        const SizedBox(height: 12),
-        if (_remedyData[ascLordName] != null)
-          _RemedyCard(remedy: _remedyData[ascLordName]!),
-      ],
+            _SectionTitle('Lagna Lord Remedy', 'Strengthen your ascendant ruler'),
+            const SizedBox(height: 12),
+            if (_remedyData[ascLordName] != null)
+              _RemedyCard(remedy: _remedyData[ascLordName]!),
+          ],
+        );
+      },
     );
   }
 

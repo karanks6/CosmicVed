@@ -1,151 +1,210 @@
-import 'package:dio/dio.dart';
 import '../../models/models.dart';
 import '../../models/user_profile.dart';
+import '../ephemeris/ephemeris_service.dart';
+import 'package:sweph/sweph.dart';
 
 class AstrologyApiService {
   static final AstrologyApiService instance = AstrologyApiService._internal();
-  final Dio _dio;
 
-  // IMPORTANT: Placeholder endpoint structure. Replace with an actual provider (e.g. Prokerala, AstrologyAPI)
-  final String _apiKey = '2723d63c-e603-5b83-85d8-04828a11740b';
+  AstrologyApiService._internal();
 
-  AstrologyApiService._internal() : _dio = Dio(BaseOptions(
-    baseUrl: 'https://api.vedicastroapi.com/v3-json/',
-    connectTimeout: const Duration(seconds: 10), // Increased for real API calls
-    receiveTimeout: const Duration(seconds: 10),
-  ));
-
-  /// Attempts to fetch Kundali data from the API
+  /// Calculates Kundali data 100% offline using Swiss Ephemeris
   Future<Kundali?> fetchKundali(UserProfile profile) async {
     try {
-      // Simulate network request to external API
-      final response = await _dio.get(
-        'horoscope/planet-details',
-        queryParameters: {
-          'api_key': _apiKey,
-          'dob': '${profile.dateOfBirth.day}/${profile.dateOfBirth.month}/${profile.dateOfBirth.year}',
-          'tob': profile.timeOfBirth,
-          'lat': profile.latitude,
-          'lon': profile.longitude,
-          'tz': 5.5, // Hardcoded timezone for demo, should be derived
-          'lang': 'en'
-        },
-      );
+      final jd = EphemerisService.getJulianDay(profile.birthDateTimeUtc);
+      final lat = profile.latitude;
+      final lon = profile.longitude;
+      final ayanamsa = EphemerisService.calculateAyanamsa(profile.birthDateTimeUtc);
 
-      if (response.statusCode == 200 && response.data != null) {
-        final data = response.data['response'];
-        if (data == null) throw Exception('No response data found');
-        if (data is String) throw Exception('API Error: $data');
-        
-        final List<PlanetPosition> planets = [];
-        for (int i = 0; i <= 9; i++) {
-          final pData = data[i.toString()];
-          if (pData != null) {
-            planets.add(PlanetPosition(
-              name: pData['full_name'] ?? pData['name'],
-              nameSanskrit: pData['full_name'] ?? pData['name'],
-              longitude: (pData['global_degree'] as num).toDouble(),
-              siderealLongitude: (pData['global_degree'] as num).toDouble(),
-              rashiIndex: ((pData['rasi_no'] as num).toInt() - 1) % 12,
-              rashiDegrees: (pData['local_degree'] as num).toDouble(),
-              isRetrograde: pData['retro'] == true,
-              houseNumber: (pData['house'] as int?) ?? 1,
-              nakshatra: pData['nakshatra'],
-              nakshatraPada: (pData['nakshatra_pada'] as num?)?.toInt(),
-            ));
-          }
-        }
+      // Map our app planets to Swiss Ephemeris bodies
+      final planetMap = {
+        'Sun': HeavenlyBody.SE_SUN,
+        'Moon': HeavenlyBody.SE_MOON,
+        'Mars': HeavenlyBody.SE_MARS,
+        'Mercury': HeavenlyBody.SE_MERCURY,
+        'Jupiter': HeavenlyBody.SE_JUPITER,
+        'Venus': HeavenlyBody.SE_VENUS,
+        'Saturn': HeavenlyBody.SE_SATURN,
+        'Rahu': HeavenlyBody.SE_MEAN_NODE,
+      };
 
-        return Kundali(
-          birthDateTime: profile.birthDateTimeUtc,
-          latitude: profile.latitude,
-          longitude: profile.longitude,
-          ayanamsa: data['panchang'] is Map ? (data['panchang']['ayanamsa'] as num?)?.toDouble() ?? 24.0 : 24.0,
-          ascendantLongitude: planets.isNotEmpty ? planets.first.longitude : 0.0,
-          ascendantRashiIndex: planets.isNotEmpty ? planets.first.rashiIndex : 0,
-          ascendantDegrees: planets.isNotEmpty ? planets.first.rashiDegrees : 0.0,
-          planets: planets,
-          houseRashis: List.generate(12, (index) => (planets.isNotEmpty ? (planets.first.rashiIndex + index) % 12 : 0)),
-          moonNakshatra: data['nakshatra'] ?? '',
-          moonNakshatraPada: (data['nakshatra_pada'] as num?)?.toInt() ?? 1,
-          sunSign: _rashiName(planets.firstWhere((p) => p.name == 'Sun').rashiIndex),
-          moonSign: data['rasi'] ?? '',
-          ascendantSign: planets.isNotEmpty ? _rashiName(planets.first.rashiIndex) : '',
-          calculatedAt: DateTime.now(),
-        );
-      }
+      final List<PlanetPosition> planets = [];
       
-      throw Exception('API returned status ${response.statusCode}');
+      planetMap.forEach((name, body) {
+        final pos = EphemerisService.getPlanet(jd, body);
+        final longitude = pos.longitude;
+        final speed = pos.speedInLongitude;
+        final rashiIndex = (longitude ~/ 30) % 12;
+        final rashiDegrees = longitude % 30;
+        final isRetrograde = speed < 0;
+
+        // Calculate Nakshatra
+        final totalNakshatras = 27;
+        final nakshatraExtent = 360.0 / totalNakshatras; // 13.333 degrees
+        final nakshatraIndex = (longitude / nakshatraExtent).floor();
+        final nakshatraRem = longitude % nakshatraExtent;
+        final nakshatraPada = (nakshatraRem / (nakshatraExtent / 4)).floor() + 1;
+
+        planets.add(PlanetPosition(
+          name: name,
+          nameSanskrit: name, // We can map Sanskrit names if needed
+          longitude: longitude,
+          siderealLongitude: longitude,
+          rashiIndex: rashiIndex,
+          rashiDegrees: rashiDegrees,
+          isRetrograde: isRetrograde,
+          houseNumber: 1, // To be calculated based on Lagna
+          nakshatra: _nakshatraName(nakshatraIndex),
+          nakshatraPada: nakshatraPada,
+        ));
+      });
+
+      // Add Ketu (exactly 180 degrees from Rahu)
+      final rahuLon = planets.firstWhere((p) => p.name == 'Rahu').longitude;
+      final ketuLon = (rahuLon + 180.0) % 360.0;
+      final ketuRashiIndex = (ketuLon ~/ 30) % 12;
+      final ketuRashiDegrees = ketuLon % 30;
+      final kNakshatraExtent = 360.0 / 27.0;
+      final kNakshatraIndex = (ketuLon / kNakshatraExtent).floor();
+      final kNakshatraRem = ketuLon % kNakshatraExtent;
+      final kNakshatraPada = (kNakshatraRem / (kNakshatraExtent / 4)).floor() + 1;
+
+      planets.add(PlanetPosition(
+        name: 'Ketu',
+        nameSanskrit: 'Ketu',
+        longitude: ketuLon,
+        siderealLongitude: ketuLon,
+        rashiIndex: ketuRashiIndex,
+        rashiDegrees: ketuRashiDegrees,
+        isRetrograde: planets.firstWhere((p) => p.name == 'Rahu').isRetrograde, // Ketu has same motion as Rahu
+        houseNumber: 1,
+        nakshatra: _nakshatraName(kNakshatraIndex),
+        nakshatraPada: kNakshatraPada,
+      ));
+
+      // Lagna (Ascendant)
+      final ascLon = EphemerisService.getAscendant(jd, lat, lon, ayanamsa);
+      final ascRashiIndex = (ascLon ~/ 30) % 12;
+      final ascDegrees = ascLon % 30;
+
+      // Assign House Numbers (1-12) based on Lagna (Whole Sign Houses)
+      for (var i = 0; i < planets.length; i++) {
+        final houseNum = ((planets[i].rashiIndex - ascRashiIndex + 12) % 12) + 1;
+        // The original code had final variables, we'd need to rebuild the object or just use copyWith if it exists.
+        // Assuming PlanetPosition is mutable or we create a new one:
+        planets[i] = planets[i].copyWith(houseNumber: houseNum);
+      }
+
+      final moon = planets.firstWhere((p) => p.name == 'Moon');
+      final sun = planets.firstWhere((p) => p.name == 'Sun');
+
+      return Kundali(
+        birthDateTime: profile.birthDateTimeUtc,
+        latitude: profile.latitude,
+        longitude: profile.longitude,
+        ayanamsa: ayanamsa,
+        ascendantLongitude: ascLon,
+        ascendantRashiIndex: ascRashiIndex,
+        ascendantDegrees: ascDegrees,
+        planets: planets,
+        houseRashis: List.generate(12, (index) => (ascRashiIndex + index) % 12),
+        moonNakshatra: moon.nakshatra ?? '',
+        moonNakshatraPada: moon.nakshatraPada ?? 1,
+        sunSign: _rashiName(sun.rashiIndex),
+        moonSign: _rashiName(moon.rashiIndex),
+        ascendantSign: _rashiName(ascRashiIndex),
+        calculatedAt: DateTime.now(),
+      );
     } catch (e) {
-      print('Kundali API Error: $e');
+      print('Kundali Calculation Error: $e');
       rethrow;
     }
   }
   
-  /// Attempts to fetch Panchang data from the API
+  /// Calculates Panchang data 100% offline using Swiss Ephemeris
   Future<Panchang?> fetchPanchang(DateTime date, double lat, double lon) async {
     try {
-      final response = await _dio.get(
-        'panchang/panchang',
-        queryParameters: {
-          'api_key': _apiKey,
-          'date': '${date.day}/${date.month}/${date.year}',
-          'lat': lat,
-          'lon': lon,
-          'tz': 5.5, 
-        },
-      );
-
-      if (response.statusCode == 200 && response.data != null) {
-        final data = response.data['response'];
-        if (data == null) throw Exception('No response data found');
-        if (data is String) throw Exception('API Error: $data');
-        
-        final adv = data['advanced_details'] ?? {};
-        
-        return Panchang(
-          date: date,
-          tithi: data['tithi'] is Map ? data['tithi']['name'] ?? '' : '',
-          tithiNumber: data['tithi'] is Map ? (data['tithi']['number'] as num?)?.toInt() ?? 1 : 1,
-          nakshatra: data['nakshatra'] is Map ? data['nakshatra']['name'] ?? '' : '',
-          nakshatraIndex: data['nakshatra'] is Map ? (data['nakshatra']['number'] as num?)?.toInt() ?? 1 : 1,
-          yoga: data['yoga'] is Map ? data['yoga']['name'] ?? '' : '',
-          yogaIndex: data['yoga'] is Map ? (data['yoga']['number'] as num?)?.toInt() ?? 1 : 1,
-          karana: data['karana'] is Map ? data['karana']['name'] ?? '' : '',
-          moonLongitude: data['moon_position'] is Map ? (data['moon_position']['moon_degree'] as num?)?.toDouble() ?? 0.0 : 0.0,
-          sunLongitude: data['sun_position'] is Map ? (data['sun_position']['sun_degree_at_rise'] as num?)?.toDouble() ?? 0.0 : 0.0,
-          vara: adv['vaara'] ?? '',
-          varaEnglish: adv['vaara'] ?? '',
-          isShuklapaksha: adv['masa'] is Map ? adv['masa']['paksha']?.toString().contains('Shukla') ?? true : true,
-          moonPhasePercent: 50.0, 
-          rahuKalamStart: _extractTime(data['rahukaal']?.toString(), 0),
-          rahuKalamEnd: _extractTime(data['rahukaal']?.toString(), 1),
-          yamagandamStart: _extractTime(data['yamakanta']?.toString(), 0),
-          yamagandamEnd: _extractTime(data['yamakanta']?.toString(), 1),
-          gulikaKalamStart: _extractTime(data['gulika']?.toString(), 0),
-          gulikaKalamEnd: _extractTime(data['gulika']?.toString(), 1),
-          abhijitMuhurta: (adv['abhijit_muhurta'] is Map)
-              ? '${adv['abhijit_muhurta']['start']} - ${adv['abhijit_muhurta']['end']}'
-              : '',
-        );
-      }
+      final jd = EphemerisService.getJulianDay(date);
+      final sunPos = EphemerisService.getPlanet(jd, HeavenlyBody.SE_SUN);
+      final moonPos = EphemerisService.getPlanet(jd, HeavenlyBody.SE_MOON);
       
-      throw Exception('API returned status ${response.statusCode}');
+      final sunLon = sunPos.longitude;
+      final moonLon = moonPos.longitude;
+
+      // Tithi
+      var diff = moonLon - sunLon;
+      if (diff < 0) diff += 360.0;
+      final tithiIndex = (diff / 12.0).floor() + 1; // 1 to 30
+      final isShuklapaksha = diff < 180.0;
+
+      // Nakshatra
+      final nakshatraExtent = 360.0 / 27.0;
+      final nakshatraIndex = (moonLon / nakshatraExtent).floor() + 1; // 1 to 27
+
+      // Yoga
+      final sum = (moonLon + sunLon) % 360.0;
+      final yogaExtent = 360.0 / 27.0;
+      final yogaIndex = (sum / yogaExtent).floor() + 1; // 1 to 27
+
+      // Karana
+      final karanaIndex = (diff / 6.0).floor() + 1; // 1 to 60
+
+      final moonPhasePercent = (diff / 360.0) * 100.0;
+
+      return Panchang(
+        date: date,
+        tithi: _tithiName(tithiIndex),
+        tithiNumber: tithiIndex,
+        nakshatra: _nakshatraName(nakshatraIndex - 1),
+        nakshatraIndex: nakshatraIndex,
+        yoga: _yogaName(yogaIndex),
+        yogaIndex: yogaIndex,
+        karana: _karanaName(karanaIndex),
+        moonLongitude: moonLon,
+        sunLongitude: sunLon,
+        vara: _vaaraName(date.weekday),
+        varaEnglish: _vaaraName(date.weekday),
+        isShuklapaksha: isShuklapaksha,
+        moonPhasePercent: moonPhasePercent,
+        // Optional: Implement Muhurtas using Sunrise/Sunset later if needed
+        rahuKalamStart: '',
+        rahuKalamEnd: '',
+        yamagandamStart: '',
+        yamagandamEnd: '',
+        gulikaKalamStart: '',
+        gulikaKalamEnd: '',
+        abhijitMuhurta: '',
+      );
     } catch (e) {
-      print('Panchang API Error: $e');
+      print('Panchang Calculation Error: $e');
       rethrow;
     }
-  }
-
-  String _extractTime(String? timeStr, int index) {
-    if (timeStr == null || timeStr.isEmpty) return '';
-    final parts = timeStr.split(' to ');
-    if (index >= parts.length) return '';
-    return parts[index].trim();
   }
 
   String _rashiName(int index) {
     const names = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
     return names[index % 12];
+  }
+
+  String _nakshatraName(int index) {
+    const names = ['Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashirsha', 'Ardra', 'Punarvasu', 'Pushya', 'Ashlesha', 'Magha', 'Purva Phalguni', 'Uttara Phalguni', 'Hasta', 'Chitra', 'Swati', 'Vishakha', 'Anuradha', 'Jyeshtha', 'Mula', 'Purva Ashadha', 'Uttara Ashadha', 'Shravana', 'Dhanishta', 'Shatabhisha', 'Purva Bhadrapada', 'Uttara Bhadrapada', 'Revati'];
+    return names[index % 27];
+  }
+
+  String _tithiName(int index) {
+    return 'Tithi \$index';
+  }
+
+  String _yogaName(int index) {
+    return 'Yoga \$index';
+  }
+
+  String _karanaName(int index) {
+    return 'Karana \$index';
+  }
+
+  String _vaaraName(int weekday) {
+    const names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    return names[(weekday - 1) % 7];
   }
 }

@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'config/router/app_router.dart';
 import 'theme/app_theme.dart';
+import 'package:sweph/sweph.dart';
+import 'package:path_provider/path_provider.dart' as path_provider;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,6 +14,20 @@ void main() async {
     await FlutterDisplayMode.setHighRefreshRate();
   } catch (e) {
     // Ignore error on unsupported platforms
+  }
+
+  // Initialize Swiss Ephemeris
+  try {
+    final appDir = await path_provider.getApplicationSupportDirectory();
+    await Sweph.init(
+      epheAssets: [
+        "packages/sweph/assets/ephe/seas_18.se1",
+      ],
+      epheFilesPath: appDir.path,
+      assetLoader: _FlutterAssetLoader(),
+    );
+  } catch (e) {
+    print("Sweph init error: $e");
   }
 
   // Lock to portrait for mobile (no-op on desktop/web)
@@ -80,5 +96,13 @@ class _SmoothScrollBehavior extends ScrollBehavior {
   @override
   ScrollPhysics getScrollPhysics(BuildContext context) {
     return const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics());
+  }
+}
+
+class _FlutterAssetLoader with AssetLoader {
+  @override
+  Future<Uint8List> load(String assetPath) async {
+    final ByteData data = await rootBundle.load(assetPath);
+    return data.buffer.asUint8List();
   }
 }

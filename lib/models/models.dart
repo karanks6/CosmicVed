@@ -77,6 +77,38 @@ class PlanetPosition {
     ];
     return "${d}°${m.toString().padLeft(2, '0')}' ${rashis[rashiIndex]}${isRetrograde ? ' (R)' : ''}";
   }
+
+  PlanetPosition copyWith({
+    String? name,
+    String? nameSanskrit,
+    double? longitude,
+    double? siderealLongitude,
+    int? rashiIndex,
+    double? rashiDegrees,
+    bool? isRetrograde,
+    bool? isExalted,
+    bool? isDebilitated,
+    bool? isMoolaTrikona,
+    int? houseNumber,
+    String? nakshatra,
+    int? nakshatraPada,
+  }) {
+    return PlanetPosition(
+      name: name ?? this.name,
+      nameSanskrit: nameSanskrit ?? this.nameSanskrit,
+      longitude: longitude ?? this.longitude,
+      siderealLongitude: siderealLongitude ?? this.siderealLongitude,
+      rashiIndex: rashiIndex ?? this.rashiIndex,
+      rashiDegrees: rashiDegrees ?? this.rashiDegrees,
+      isRetrograde: isRetrograde ?? this.isRetrograde,
+      isExalted: isExalted ?? this.isExalted,
+      isDebilitated: isDebilitated ?? this.isDebilitated,
+      isMoolaTrikona: isMoolaTrikona ?? this.isMoolaTrikona,
+      houseNumber: houseNumber ?? this.houseNumber,
+      nakshatra: nakshatra ?? this.nakshatra,
+      nakshatraPada: nakshatraPada ?? this.nakshatraPada,
+    );
+  }
 }
 
 // ─── Kundali / Birth Chart ────────────────────────────────────────────────────

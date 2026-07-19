@@ -126,9 +126,18 @@ class UserProfile {
 
   /// Birth datetime in local timezone (approximation — full version uses timezone package)
   DateTime get birthDateTimeLocal {
-    final parts = timeOfBirth.split(':');
-    final h = int.parse(parts[0]);
+    String t = timeOfBirth.toUpperCase().trim();
+    bool isPM = t.contains('PM');
+    bool isAM = t.contains('AM');
+    t = t.replaceAll('AM', '').replaceAll('PM', '').trim();
+    
+    final parts = t.split(':');
+    int h = int.parse(parts[0]);
     final m = int.parse(parts[1]);
+    
+    if (isPM && h < 12) h += 12;
+    if (isAM && h == 12) h = 0;
+    
     return DateTime(
       dateOfBirth.year,
       dateOfBirth.month,

@@ -68,6 +68,7 @@ dependencies:
   rxdart: ^0.28.0
   flutter_displaymode: ^0.7.0
   html: ^0.15.6
+  sweph: ^3.2.1+2.10.3
 
 dev_dependencies:
   flutter_test:

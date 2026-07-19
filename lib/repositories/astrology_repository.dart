@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import '../database/daos/other_daos.dart';
 import '../models/models.dart';
 import '../models/user_profile.dart';
@@ -48,26 +47,12 @@ class AstrologyRepository {
     try {
       Kundali? kundali;
       
-      // 1. Check Network Connectivity
-      final connectivityResult = await Connectivity().checkConnectivity();
-      bool isOnline = connectivityResult.isNotEmpty && !connectivityResult.contains(ConnectivityResult.none);
+      // 1. Calculate Offline
+      kundali = await AstrologyApiService.instance.fetchKundali(profile);
 
-      if (isOnline) {
-        // 2. Attempt API Fetch
-        try {
-          kundali = await AstrologyApiService.instance.fetchKundali(profile);
-        } catch (e) {
-          // Log API failure, silently continue to offline fallback
-          print('Astrology API fetch failed, falling back to offline calculations: $e');
-        }
+      if (kundali == null) {
+        return Failure(CalculationFailure('Kundali calculation returned null'));
       }
-
-      // 3. Offline Fallback if API failed or device is offline
-      kundali ??= _eph.calculateKundali(
-        birthDateTimeUtc: profile.birthDateTimeUtc,
-        latitude: profile.latitude,
-        longitude: profile.longitude,
-      );
 
       // 4. Persist to cache
       await _chartDao.insertOrReplace({
@@ -107,32 +92,18 @@ class AstrologyRepository {
         }
       }
 
-      Panchang? panchang;
+      Panchang? panchang = PanchangService.instance.calculate(
+        dateLocal: dateLocal,
+        latitude: latitude,
+        longitude: longitude,
+        utcOffsetMinutes: utcOffsetMinutes,
+      );
       
-      // 1. Check Network Connectivity
-      final connectivityResult = await Connectivity().checkConnectivity();
-      bool isOnline = connectivityResult.isNotEmpty && !connectivityResult.contains(ConnectivityResult.none);
-
-      if (isOnline) {
-        // 2. Attempt API Fetch
-        try {
-          panchang = await AstrologyApiService.instance.fetchPanchang(dateLocal, latitude, longitude);
-        } catch (e) {
-          // Log API failure, silently continue to offline fallback
-          print('Panchang API fetch failed, falling back to offline calculations: $e');
-        }
-      }
-
-      // 3. Offline Fallback
       if (panchang == null) {
-        panchang = PanchangService.instance.calculate(
-          dateLocal: dateLocal,
-          latitude: latitude,
-          longitude: longitude,
-          utcOffsetMinutes: utcOffsetMinutes,
-        );
+        return Failure(CalculationFailure('Panchang calculation returned null'));
       }
-      // 4. Save to Cache
+      
+      // 2. Save to Cache
       await _cacheDao.insertOrReplace({
         'profile_id': profileId,
         'cache_type': 'panchang',
