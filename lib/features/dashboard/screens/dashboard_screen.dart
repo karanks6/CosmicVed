@@ -194,8 +194,15 @@ class _DashboardContent extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      // Profile avatar
-                      GestureDetector(
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.info_outline, color: CosmicColors.gold.withValues(alpha: 0.8)),
+                            onPressed: () => _showAboutDialog(context),
+                          ),
+                          const SizedBox(width: 8),
+                          // Profile avatar
+                          GestureDetector(
                         onTap: () => context.push(AppRoutes.profiles),
                         child: Container(
                           width: 50,
@@ -222,6 +229,8 @@ class _DashboardContent extends ConsumerWidget {
                             ),
                           ),
                         ),
+                      ),
+                        ],
                       ),
                     ],
                   ),
@@ -798,6 +807,101 @@ class _SectionSkeleton extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         color: CosmicColors.bgCard,
       ),
+    );
+  }
+}
+
+void _showAboutDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return Dialog(
+        backgroundColor: CosmicColors.bgDeep,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        insetPadding: const EdgeInsets.all(24),
+        child: CosmicCard(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.info_outline, color: CosmicColors.gold, size: 48),
+              const SizedBox(height: 16),
+              Text(
+                'About CosmicVed',
+                style: TextStyle(
+                  fontFamily: CosmicTypography.cinzel,
+                  fontSize: 24,
+                  color: CosmicColors.textHigh,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 24),
+              const _AboutRow(Icons.person, 'Developer', 'Karan S Suvarna'),
+              const SizedBox(height: 12),
+              const _AboutRow(Icons.email, 'Contact', 'suvarnakaran77@gmail.com'),
+              const SizedBox(height: 12),
+              const _AboutRow(Icons.code, 'GitHub', 'https://github.com/karanks6'),
+              const SizedBox(height: 12),
+              const _AboutRow(Icons.system_update, 'Version', '1.0.0+1'),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: CosmicColors.gold,
+                  foregroundColor: CosmicColors.bgDeep,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                ),
+                child: const Text('Close', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _AboutRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+
+  const _AboutRow(this.icon, this.title, this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Icon(icon, color: CosmicColors.gold.withValues(alpha: 0.8), size: 20),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontFamily: CosmicTypography.inter,
+                  fontSize: 12,
+                  color: CosmicColors.textLow,
+                ),
+              ),
+              Text(
+                value,
+                style: TextStyle(
+                  fontFamily: CosmicTypography.inter,
+                  fontSize: 14,
+                  color: CosmicColors.textMed,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
