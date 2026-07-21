@@ -91,6 +91,13 @@ class _ProfilesListState extends ConsumerState<_ProfilesList> {
           duration: const Duration(milliseconds: 300),
         );
         await ProfileRepository().deleteProfile(p.id!);
+        
+        if (p.id == widget.currentProfile?.id) {
+          if (_profiles!.isNotEmpty) {
+            await ProfileRepository().setActiveProfile(_profiles!.first.id!);
+          }
+          ref.invalidate(activeProfileProvider);
+        }
       }
     }
   }
@@ -105,9 +112,12 @@ class _ProfilesListState extends ConsumerState<_ProfilesList> {
           child: CosmicCard(
             glowGold: p.id == widget.currentProfile?.id,
             onTap: () async {
-              if (p.id != null && p.id != widget.currentProfile?.id) {
-                await ProfileRepository().setActiveProfile(p.id!);
-                ref.invalidate(activeProfileProvider);
+              if (p.id != null) {
+                if (p.id != widget.currentProfile?.id) {
+                  await ProfileRepository().setActiveProfile(p.id!);
+                  ref.invalidate(activeProfileProvider);
+                }
+                context.go(AppRoutes.dashboard);
               }
             },
             child: Row(
@@ -132,13 +142,20 @@ class _ProfilesListState extends ConsumerState<_ProfilesList> {
                     ],
                   ),
                 ),
-                if (p.id == widget.currentProfile?.id)
-                  const Icon(Icons.check_circle_rounded, color: CosmicColors.gold, size: 20)
-                else
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
-                    onPressed: () => _deleteProfile(p),
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (p.id == widget.currentProfile?.id)
+                      const Padding(
+                        padding: EdgeInsets.only(right: 8.0),
+                        child: Icon(Icons.check_circle_rounded, color: CosmicColors.gold, size: 20),
+                      ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
+                      onPressed: () => _deleteProfile(p),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
