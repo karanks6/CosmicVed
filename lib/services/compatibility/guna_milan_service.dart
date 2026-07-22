@@ -24,7 +24,14 @@ class GunaMilanService {
 
   // ─── Main Calculation ─────────────────────────────────────────────────────
 
-  CompatibilityResult calculate(Kundali bridgroom, Kundali bride) {
+  CompatibilityResult calculate(Kundali personA, Kundali personB) {
+    final resultAB = _calculateRaw(personA, personB);
+    final resultBA = _calculateRaw(personB, personA);
+
+    return resultAB.totalScore >= resultBA.totalScore ? resultAB : resultBA;
+  }
+
+  CompatibilityResult _calculateRaw(Kundali bridgroom, Kundali bride) {
     final moonAIdx = bridgroom.planets
         .firstWhere((p) => p.name == 'Moon')
         .rashiIndex;
@@ -76,7 +83,7 @@ class GunaMilanService {
 
   // ─── 1. Varna (Caste Koota) — Max 1 point ────────────────────────────────
   GunaKoota _varna(int rashiA, int rashiB) {
-    const varnaMap = [0, 3, 2, 1, 0, 2, 3, 1, 0, 3, 2, 1];
+    const varnaMap = [2, 1, 0, 3, 2, 1, 0, 3, 2, 1, 0, 3];
     // Brahmin=3, Kshatriya=2, Vaishya=1, Shudra=0
     const varnaNames = ['Shudra', 'Vaishya', 'Kshatriya', 'Brahmin'];
 
@@ -184,10 +191,9 @@ class GunaMilanService {
   GunaKoota _yoni(int nkA, int nkB) {
     // Yoni animal for each nakshatra
     const yoniMap = [
-      'Horse', 'Elephant', 'Sheep', 'Snake', 'Dog', 'Cat', 'Rat', 'Cow',
-      'Buffalo', 'Tiger', 'Deer', 'Monkey', 'Mongoose', 'Lion',
-      'Tiger', 'Tiger', 'Deer', 'Dog', 'Monkey', 'Mongoose', 'Cow',
-      'Horse', 'Lion', 'Elephant', 'Lion', 'Cow', 'Elephant'
+      'Horse', 'Elephant', 'Sheep', 'Snake', 'Snake', 'Dog', 'Cat', 'Sheep',
+      'Cat', 'Rat', 'Rat', 'Cow', 'Buffalo', 'Tiger', 'Buffalo', 'Tiger', 'Deer', 'Deer',
+      'Dog', 'Monkey', 'Mongoose', 'Monkey', 'Lion', 'Horse', 'Lion', 'Cow', 'Elephant'
     ];
 
     if (nkA < 0 || nkB < 0) {
@@ -320,8 +326,8 @@ class GunaMilanService {
   GunaKoota _gana(int nkA, int nkB) {
     // Gana for each nakshatra: D=Deva,M=Manava,R=Rakshasa
     const ganaMap = [
-      'D','M','R','D','M','R','D','M','R','D','M','R','D','M','R',
-      'D','M','R','D','M','R','D','M','R','D','M','R'
+      'D', 'M', 'R', 'M', 'D', 'R', 'D', 'D', 'R', 'R', 'M', 'M', 'D', 'R', 'D',
+      'R', 'D', 'R', 'R', 'M', 'M', 'D', 'R', 'R', 'M', 'M', 'D'
     ];
 
     if (nkA < 0 || nkB < 0) {
@@ -399,7 +405,8 @@ class GunaMilanService {
   GunaKoota _nadi(int nkA, int nkB) {
     // Nadi type for each nakshatra: 0=Aadi, 1=Madhya, 2=Antya
     const nadiMap = [
-      0,1,2,0,1,2,0,1,2,0,1,2,0,1,2,0,1,2,0,1,2,0,1,2,0,1,2
+      0, 1, 2, 2, 1, 0, 0, 1, 2, 2, 1, 0, 0, 1, 2,
+      2, 1, 0, 0, 1, 2, 2, 1, 0, 0, 1, 2
     ];
     const nadiNames = ['Aadi (Vata)', 'Madhya (Pitta)', 'Antya (Kapha)'];
 

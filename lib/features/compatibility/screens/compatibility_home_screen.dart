@@ -10,6 +10,7 @@ import '../../../models/user_profile.dart';
 import '../../../repositories/profile_repository.dart';
 import '../../../repositories/astrology_repository.dart';
 import '../../../services/numerology/chaldean_service.dart';
+import '../../../services/compatibility/guna_milan_service.dart';
 import '../../dashboard/screens/dashboard_screen.dart';
 
 class CompatibilityHomeScreen extends ConsumerStatefulWidget {
@@ -49,80 +50,87 @@ class _CompatibilityHomeScreenState extends ConsumerState<CompatibilityHomeScree
     try {
       final repo = AstrologyRepository();
       
-      // Get Kundalis for both to extract Moon signs
       final kA = (await repo.getOrCalculateKundali(_personA!)).valueOrNull;
       final kB = (await repo.getOrCalculateKundali(_personB!)).valueOrNull;
 
-      int signA = kA != null ? kA.planets.firstWhere((p) => p.name == 'Moon').rashiIndex : 0;
-      int signB = kB != null ? kB.planets.firstWhere((p) => p.name == 'Moon').rashiIndex : 0;
+      if (kA == null || kB == null) throw Exception('Kundali error');
 
-      // Element arrays
-      final elements = ['Fire', 'Earth', 'Air', 'Water'];
-      String elementA = elements[signA % 4];
-      String elementB = elements[signB % 4];
-
-      // Elemental Compatibility (0.0 to 1.0)
-      double elementalScore = 0.5;
-      if (elementA == elementB) {
-        elementalScore = 0.9;
-      } else if ((elementA == 'Fire' && elementB == 'Air') || (elementA == 'Air' && elementB == 'Fire')) {
-        elementalScore = 0.85;
-      } else if ((elementA == 'Earth' && elementB == 'Water') || (elementA == 'Water' && elementB == 'Earth')) {
-        elementalScore = 0.85;
-      } else if ((elementA == 'Fire' && elementB == 'Water') || (elementA == 'Water' && elementB == 'Fire')) {
-        elementalScore = 0.3;
-      } else {
-        elementalScore = 0.6;
-      }
+      final gunaResult = GunaMilanService.instance.calculate(kA, kB);
 
       // Numerology Compatibility
       final numA = ChaldeanService.instance.calculateLifePath(_personA!.dateOfBirth).number;
       final numB = ChaldeanService.instance.calculateLifePath(_personB!.dateOfBirth).number;
-      final numScore = ChaldeanService.instance.numerologyCompatibility(numA, numB);
+      
+      bool isManglik(Kundali k) {
+        final mars = k.getPlanet('Mars');
+        if (mars == null) return false;
+        final h = mars.houseNumber;
+        return h == 1 || h == 4 || h == 7 || h == 8 || h == 12;
+      }
 
-      // Final Score
-      final finalScore = (elementalScore * 0.5) + (numScore * 0.5);
-      final percentage = (finalScore * 100).round();
-
+      final percentage = gunaResult.scorePercent.round();
       String verdict = '';
-      String strengths = '';
-      String challenges = '';
 
-      if (percentage >= 80) {
+      if (percentage >= 75) {
         verdict = 'Excellent Match';
-        strengths = 'Deep soul connection, natural understanding, and mutual respect.';
-        challenges = 'Maintaining individuality inside such a close bond.';
-      } else if (percentage >= 60) {
+      } else if (percentage >= 50) {
         verdict = 'Good Match';
-        strengths = 'Strong friendship foundation and willingness to cooperate.';
-        challenges = 'Occasional miscommunications requiring patience.';
-      } else if (percentage >= 40) {
+      } else if (percentage >= 35) {
         verdict = 'Challenging Match';
-        strengths = 'Opportunities for massive personal growth and learning.';
-        challenges = 'Fundamentally different approaches to emotions and life goals.';
       } else {
         verdict = 'Karmic Match';
-        strengths = 'Intense initial attraction and karmic lessons.';
-        challenges = 'High friction, requires immense compromise to sustain.';
+      }
+
+      // Generate accurate, unique strengths and challenges based on actual Koota scores
+      List<String> strengthList = [];
+      List<String> challengeList = [];
+      
+      for (var k in gunaResult.kootas ?? []) {
+        if (k.pointsObtained == k.maxPoints && k.maxPoints >= 3) {
+          if (k.name == 'Nadi') strengthList.add('Perfect genetic and health harmony.');
+          if (k.name == 'Bhakoot') strengthList.add('Deep emotional resonance and love longevity.');
+          if (k.name == 'Gana') strengthList.add('Matching temperaments and natural understanding.');
+          if (k.name == 'Maitri') strengthList.add('Strong natural friendship and mutual respect.');
+          if (k.name == 'Yoni') strengthList.add('High physical attraction and intimacy.');
+        } else if (k.pointsObtained == 0 && k.maxPoints >= 3) {
+          if (k.name == 'Nadi') challengeList.add('Nadi Dosha detected: health and genetic friction.');
+          if (k.name == 'Bhakoot') challengeList.add('Bhakoot Dosha: emotional mismatches may occur.');
+          if (k.name == 'Gana') challengeList.add('Clashing temperaments require patience.');
+          if (k.name == 'Maitri') challengeList.add('Lacking natural friendship, requires effort to connect.');
+          if (k.name == 'Yoni') challengeList.add('Physical chemistry may need work.');
+        }
+      }
+      
+      // Fallbacks if no major ones found
+      if (strengthList.isEmpty) {
+        if (percentage >= 60) strengthList.add('Overall steady foundation for a good relationship.');
+        else strengthList.add('Opportunities for personal growth through compromise.');
+      }
+      if (challengeList.isEmpty) {
+        if (percentage >= 60) challengeList.add('Occasional miscommunications requiring standard patience.');
+        else challengeList.add('Fundamentally different approaches to life goals.');
       }
 
       if (mounted) {
         setState(() {
           _results = {
-            'score': percentage,
-            'verdict': verdict,
-            'strengths': strengths,
-            'challenges': challenges,
-            'elementA': elementA,
-            'elementB': elementB,
+            'guna': gunaResult,
             'numA': numA,
             'numB': numB,
+            'manglikA': isManglik(kA),
+            'manglikB': isManglik(kB),
+            'percentage': percentage,
+            'verdict': verdict,
+            'strengths': strengthList.take(2).join('\n'),
+            'challenges': challengeList.take(2).join('\n'),
           };
           _calculating = false;
         });
       }
     } catch (e) {
-      setState(() => _calculating = false);
+      if (mounted) {
+        setState(() => _calculating = false);
+      }
     }
   }
 
@@ -262,8 +270,25 @@ class _ResultsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final score = results['score'] as int;
-    final color = score >= 80 ? Colors.greenAccent : (score >= 60 ? Colors.blueAccent : (score >= 40 ? Colors.orangeAccent : Colors.redAccent));
+    final CompatibilityResult guna = results['guna'];
+    final score = guna.scorePercent.round();
+    final color = score >= 75 ? Colors.greenAccent : (score >= 50 ? Colors.blueAccent : (score >= 35 ? Colors.orangeAccent : Colors.redAccent));
+    final nameA = personA.name.split(' ')[0];
+    final nameB = personB.name.split(' ')[0];
+
+    bool hasNadiDosha = false;
+    bool hasBhakootDosha = false;
+    for (var k in (guna.kootas ?? [])) {
+      if (k.name == 'Nadi' && k.pointsObtained == 0) hasNadiDosha = true;
+      if (k.name == 'Bhakoot' && k.pointsObtained == 0) hasBhakootDosha = true;
+    }
+
+    final manglikA = results['manglikA'] as bool;
+    final manglikB = results['manglikB'] as bool;
+    String manglikStatus = 'Both non-Manglik. Peaceful alignment.';
+    if (manglikA && manglikB) manglikStatus = 'Both are Manglik. Dosha is cancelled.';
+    else if (manglikA) manglikStatus = '$nameA is Manglik, $nameB is not. May cause friction.';
+    else if (manglikB) manglikStatus = '$nameB is Manglik, $nameA is not. May cause friction.';
 
     return CosmicCard(
       glowGold: true,
@@ -291,16 +316,61 @@ class _ResultsCard extends StatelessWidget {
           Text(results['verdict'], style: TextStyle(fontFamily: CosmicTypography.cinzel, fontSize: 22, color: color, fontWeight: FontWeight.bold)),
           const SizedBox(height: 24),
           
-          _InfoRow('Life Path', '${personA.name.split(' ')[0]}: ${results['numA']}  |  ${personB.name.split(' ')[0]}: ${results['numB']}'),
-          _InfoRow('Element Harmony', '${results['elementA']} & ${results['elementB']}'),
-          
+          _DetailSection(title: 'Strengths', content: results['strengths'], icon: '✨', color: Colors.greenAccent),
+          const SizedBox(height: 16),
+          _DetailSection(title: 'Challenges', content: results['challenges'], icon: '⚡', color: Colors.orangeAccent),
+            
           const SizedBox(height: 24),
           const Divider(color: Colors.white12),
           const SizedBox(height: 16),
           
-          _DetailSection(title: 'Strengths', content: results['strengths'], icon: '✨', color: Colors.greenAccent),
+          Text('Deep Astrological Analysis', style: TextStyle(fontFamily: CosmicTypography.cinzel, fontSize: 18, color: CosmicColors.gold)),
           const SizedBox(height: 16),
-          _DetailSection(title: 'Challenges', content: results['challenges'], icon: '⚡', color: Colors.orangeAccent),
+
+          _InfoRow('Moon Sign', '$nameA: ${guna.details['moon_sign_a']} | $nameB: ${guna.details['moon_sign_b']}'),
+          _InfoRow('Birth Star (Nakshatra)', '$nameA: ${guna.details['nakshatra_a']} | $nameB: ${guna.details['nakshatra_b']}'),
+          _InfoRow('Life Path (Numerology)', '$nameA: ${results['numA']} | $nameB: ${results['numB']}'),
+          
+          const SizedBox(height: 24),
+          
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.shield_outlined, color: Colors.redAccent, size: 20),
+                    const SizedBox(width: 8),
+                    Text('Dosha Checks (Flaws)', style: TextStyle(fontFamily: CosmicTypography.cinzel, fontSize: 14, color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _InfoRow('Manglik / Kuja Dosha', manglikStatus, isWrap: true),
+                const SizedBox(height: 8),
+                _InfoRow('Nadi Dosha (Genetics)', hasNadiDosha ? 'Detected! Zero points in Nadi.' : 'None (Safe)'),
+                const SizedBox(height: 8),
+                _InfoRow('Bhakoot Dosha (Love)', hasBhakootDosha ? 'Detected! Zero points in Bhakoot.' : 'None (Safe)'),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 24),
+          Text('Ashtakoota Match Score: ${guna.totalScore.toStringAsFixed(1)} / 36.0', style: TextStyle(fontFamily: CosmicTypography.cinzel, fontSize: 18, color: CosmicColors.gold)),
+          const SizedBox(height: 12),
+          Text('Ashtakoota Score Breakdown', style: TextStyle(fontFamily: CosmicTypography.cinzel, fontSize: 16, color: CosmicColors.gold)),
+          const SizedBox(height: 12),
+          if (guna.kootas != null)
+            ...guna.kootas!.map((k) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Expanded(flex: 3, child: Text(k.name, style: TextStyle(fontFamily: CosmicTypography.inter, color: CosmicColors.textHigh, fontWeight: FontWeight.w600))),
+                  Expanded(flex: 5, child: Text('${k.pointsObtained} / ${k.maxPoints} pts', style: TextStyle(fontFamily: CosmicTypography.inter, color: CosmicColors.gold))),
+                ],
+              ),
+            )),
         ],
       ),
     );
@@ -310,17 +380,20 @@ class _ResultsCard extends StatelessWidget {
 class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
-  const _InfoRow(this.label, this.value);
+  final bool isWrap;
+  const _InfoRow(this.label, this.value, {this.isWrap = false});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(fontFamily: CosmicTypography.inter, color: CosmicColors.textMed)),
-          Text(value, style: TextStyle(fontFamily: CosmicTypography.inter, color: CosmicColors.textHigh, fontWeight: FontWeight.w600)),
+          Expanded(flex: 2, child: Text(label, style: TextStyle(fontFamily: CosmicTypography.inter, color: CosmicColors.textMed))),
+          const SizedBox(width: 8),
+          Expanded(flex: 3, child: Text(value, textAlign: TextAlign.right, style: TextStyle(fontFamily: CosmicTypography.inter, color: CosmicColors.textHigh, fontWeight: FontWeight.w600))),
         ],
       ),
     );

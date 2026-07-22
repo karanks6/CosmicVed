@@ -10,6 +10,7 @@ import '../../../models/models.dart';
 import '../../../models/user_profile.dart';
 import '../../../repositories/profile_repository.dart';
 import '../../../repositories/astrology_repository.dart';
+import '../../../services/astrology/cosmic_roots_service.dart';
 
 // ─── Providers ─────────────────────────────────────────────────────────────
 
@@ -280,15 +281,26 @@ class _DashboardContent extends ConsumerWidget {
                   case 5: return const SizedBox(height: 16);
                   case 6:
                     return RepaintBoundary(
+                      child: kundaliAsync.when(
+                        loading: () => _SectionSkeleton(height: 120),
+                        error: (_, __) => const SizedBox.shrink(),
+                        data: (kundali) => kundali != null
+                            ? _CosmicRootsCard(kundali: kundali)
+                            : const SizedBox.shrink(),
+                      ),
+                    );
+                  case 7: return const SizedBox(height: 16);
+                  case 8:
+                    return RepaintBoundary(
                       child: _DailyWisdomCard(
                         dayOfYear: now.difference(DateTime(now.year)).inDays,
                       ),
                     );
-                  case 7: return const SizedBox(height: 100);
+                  case 9: return const SizedBox(height: 100);
                   default: return null;
                 }
               },
-              childCount: 8,
+              childCount: 10,
             ),
           ),
         ),
@@ -673,6 +685,96 @@ class _CosmicInfo extends StatelessWidget {
             color: CosmicColors.textLow,
           ),
           textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Cosmic Roots Card ─────────────────────────────────────────────────────
+
+class _CosmicRootsCard extends StatelessWidget {
+  final Kundali kundali;
+  const _CosmicRootsCard({required this.kundali});
+
+  @override
+  Widget build(BuildContext context) {
+    final moon = kundali.getPlanet('Moon');
+    final nakIndex = moon != null ? (moon.siderealLongitude / (360 / 27)).floor() : 0;
+    final rashiIndex = moon?.rashiIndex ?? 0;
+
+    final gana = CosmicRootsService.instance.getGana(nakIndex);
+    final yoni = CosmicRootsService.instance.getYoni(nakIndex);
+    final pakshi = CosmicRootsService.instance.getPakshi(nakIndex);
+    final vriksha = CosmicRootsService.instance.getVriksha(nakIndex);
+    final ratna = CosmicRootsService.instance.getRatna(rashiIndex);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeader(
+          title: 'Cosmic Roots',
+          onSeeAll: null,
+        ),
+        const SizedBox(height: 12),
+        CosmicCard(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _RootItem(icon: '✨', label: 'Gana (Temperament)', value: gana),
+              const SizedBox(height: 10),
+              _RootItem(icon: '🐅', label: 'Yoni (Animal)', value: yoni),
+              const SizedBox(height: 10),
+              _RootItem(icon: '🦅', label: 'Pakshi (Bird)', value: pakshi),
+              const SizedBox(height: 10),
+              _RootItem(icon: '🌿', label: 'Vriksha (Tree)', value: vriksha),
+              const SizedBox(height: 10),
+              _RootItem(icon: '💎', label: 'Ratna (Birth Stone)', value: ratna),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RootItem extends StatelessWidget {
+  final String icon;
+  final String label;
+  final String value;
+  const _RootItem({required this.icon, required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(icon, style: const TextStyle(fontSize: 16)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: CosmicTypography.inter,
+                  fontSize: 11,
+                  color: CosmicColors.textMed,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontFamily: CosmicTypography.inter,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: CosmicColors.textHigh,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
