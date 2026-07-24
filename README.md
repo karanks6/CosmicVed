@@ -2,59 +2,61 @@
 
 ![CosmicVed Logo](assets/icon/CosmicVed_logo.png)
 
-**CosmicVed** is a beautifully designed Flutter application that brings the ancient wisdom of Vedic Astrology and Chaldean Numerology into the modern era. The app is crafted with a focus on deep astrological insights, premium user experience, and absolute privacy.
+**CosmicVed** is a beautifully designed, premium Flutter application that bridges the gap between ancient Vedic wisdom and modern technology. Crafted with a focus on deep astrological accuracy, stunning aesthetics, and absolute privacy, CosmicVed offers users a personalized window into their cosmic and numerological profiles.
 
 ---
 
 ## 📖 Brief Description
-CosmicVed offers users a personalized window into their astrological and numerological profiles. By generating accurate Vedic Kundali (Birth Charts) in North, South, and East Indian styles, providing daily Panchang data, calculating Chaldean numerology insights, and offering compatibility matching (Ashtakoota Guna Milan), the app serves as a comprehensive spiritual and astrological companion.
+CosmicVed serves as a comprehensive spiritual and astrological companion. By generating highly accurate Vedic Kundali (Birth Charts), daily Panchang data, Chaldean numerology insights, and authentic compatibility matching (Ashtakoota Guna Milan), the app empowers users with profound cosmic knowledge. 
 
 ## ⚠️ Problem Statement
 Modern astrology apps often suffer from several critical issues:
-1. **Privacy Concerns:** They require user accounts, internet connectivity, and often store highly sensitive birth data on remote servers.
+1. **Privacy Concerns:** They require mandatory user accounts, internet connectivity, and often store highly sensitive personal birth data on remote servers.
 2. **Cluttered UI/UX:** Many apps have outdated, overwhelming interfaces that make it difficult for users to interpret complex astrological data.
-3. **Inaccuracy & Latency:** Relying on constant API calls for astrological calculations leads to slow load times and unavailability when offline.
+3. **Inaccuracy & Latency:** Relying on constant API calls for astrological calculations leads to slow load times, subscription paywalls, and unavailability when offline.
 4. **Lack of Authenticity:** Many modern apps dilute traditional Vedic concepts or mix systems inaccurately.
 
 ## 💡 Proposed Solution
-CosmicVed solves these problems by providing an entirely on-device astrology engine. 
-- **Privacy First:** No accounts are required, and all user profiles and astrological data are stored securely on the local device using SQLite and Hive.
-- **Modern Aesthetics:** The app features a premium, space-themed UI with glassmorphism, dynamic starfields, and smooth micro-animations.
-- **Offline Reliability:** By shipping with a local Geonames database and utilizing an offline ephemeris engine, charts and calculations are generated instantly without an internet connection.
-- **Authentic Calculations:** Utilizes precise astronomical algorithms to calculate planetary positions, ascendant degrees, and authentic Chaldean numerology values.
+CosmicVed solves these problems by providing an entirely **on-device astrology engine**. 
+- **Privacy First:** No accounts are required. All user profiles and astrological data are stored securely on the local device using SQLite and Hive.
+- **Modern Aesthetics:** The app features a premium, space-themed UI with deep space colors, glassmorphism, dynamic starfields, and smooth micro-animations.
+- **Offline Reliability:** By shipping with a bundled offline Geonames database and utilizing the Swiss Ephemeris (`sweph`) engine, charts and calculations are generated instantly without an internet connection.
+- **Authentic Calculations:** Utilizes precise astronomical algorithms to calculate planetary positions, ascendant degrees, authentic Chaldean numerology, and deep Vedic mapping like Pancha Pakshi and Ashtakoota.
 
 ## ✨ Unique Features
-- **Instant Offline Kundali Generation:** Generates full Vedic birth charts instantly using an integrated ephemeris and local timezone/coordinate resolution.
-- **Interactive Dials & Selectors:** Custom-built UI components like the rotating Material 3 dialer for time selection.
-- **Multi-Profile Management:** Seamlessly add, switch, and delete multiple user profiles with smooth animated transitions.
-- **Dynamic Starfield Backgrounds:** A highly optimized, custom-painted parallax star background that reacts to scrolling.
-- **Three-Style Charts:** Support for rendering North Indian (Diamond), South Indian (Grid), and East Indian chart styles.
+- **Instant Offline Kundali Generation:** Generates full Vedic birth charts instantly in North Indian (Diamond), South Indian (Grid), and East Indian chart styles.
+- **Deep Compatibility Matching (Guna Milan):** Features an authentic Ashtakoota compatibility calculator that dynamically analyzes the 36 Gunas, offering detailed strengths, challenges, and percentage-based synergy between profiles.
+- **Cosmic Roots Identification:** Maps a user's exact Nakshatra and Rashi to their traditional Vedic identifiers: Gana (Temperament), Yoni (Animal), Pakshi (Bird), Vriksha (Tree), and Ratna (Birth Stone).
+- **Chaldean Numerology Engine:** Generates comprehensive Destiny, Soul Urge, and Personality numbers based on ancient Chaldean mapping.
+- **Dynamic Starfield Backgrounds:** A highly optimized, custom-painted parallax star background that reacts seamlessly to scrolling and gestures.
+- **Multi-Profile Management:** Seamlessly add, switch, and manage multiple user profiles with smooth animated transitions.
 
 ---
 
 ## 🏛️ Architecture
-CosmicVed follows a **Feature-First Architecture** combined with the **Repository Pattern** and **Riverpod** for state management. This ensures high cohesion, loose coupling, and testability.
+CosmicVed follows a **Feature-First Architecture** combined with the **Repository Pattern** and **Riverpod** for state management. This ensures high cohesion, loose coupling, and maintainability.
 
 ```text
 lib/
 ├── config/         # App routing (GoRouter), theme configuration
 ├── constants/      # App-wide constants, enums, astrology lookup tables
-├── features/       # Feature-driven modules (dashboard, kundali, panchang, etc.)
+├── database/       # Local database configuration (SQLite, DAOs)
+├── features/       # Feature-driven modules (compatibility, dashboard, kundali, numerology, panchang, etc.)
 │   └── [feature]/
 │       ├── providers/  # Riverpod state providers for the specific feature
 │       ├── screens/    # UI screens
 │       └── widgets/    # Feature-specific widgets
 ├── models/         # Data models with JSON serialization
 ├── repositories/   # Data access layer (abstracts DB and API calls)
-├── services/       # Core business logic (Ephemeris, Astrology API, Geolocation)
-├── theme/          # Color schemes, typography, and visual assets
+├── services/       # Core business logic (Ephemeris, Geolocation, Compatibility, Cosmic Roots)
+├── theme/          # Deep space color schemes, typography, and visual assets
 └── widgets/        # Shared/global UI components (Buttons, Cards, Starfields)
 ```
 
 ## 🔄 Workflow
 1. **Onboarding & Profile Creation:** The user launches the app and is greeted by a cinematic welcome screen. They create a profile by entering their Name, Gender, Date of Birth, Time of Birth (via a custom dialer), and City (resolved via a bundled offline Geonames SQLite database).
-2. **Dashboard Initialization:** The app reads the active profile from local storage and instantly calculates the daily Panchang and core astrological metrics.
-3. **Feature Navigation:** The user can seamlessly switch between Vedic Kundali, Chaldean Numerology, Daily Panchang, and Profile Management without any loading screens, as data is computed on the fly or cached locally.
+2. **Dashboard Initialization:** The app reads the active profile from local storage and instantly calculates the daily Panchang, Cosmic Roots, and core astrological metrics.
+3. **Feature Navigation:** The user can seamlessly switch between Vedic Kundali, Chaldean Numerology, Compatibility Matching, Daily Panchang, and Profile Management without any loading screens.
 4. **Profile Switching:** When switching profiles, the `activeProfileProvider` is invalidated, causing the UI to smoothly transition and recalculate all charts for the newly selected user.
 
 ---
@@ -63,7 +65,7 @@ lib/
 The app utilizes a dual-database approach for optimal performance and flexibility:
 
 ### 1. SQLite (Geonames DB)
-Used as a read-only, bundled database to provide offline city search, coordinates, and timezone lookups.
+Used as a read-only, bundled database to provide offline city search, coordinates, and timezone lookups instantly.
 - **Table `cities`**: `id` (INT), `name` (TEXT), `country_code` (TEXT), `latitude` (REAL), `longitude` (REAL), `timezone_id` (TEXT)
 
 ### 2. SQFlite / Hive (User Data)
@@ -75,11 +77,9 @@ Used for read/write operations pertaining to user profiles and app settings.
   - `date_of_birth` (TEXT)
   - `time_of_birth` (TEXT)
   - `birth_city` (TEXT)
-  - `birth_country` (TEXT)
   - `latitude` (REAL)
   - `longitude` (REAL)
   - `timezone_id` (TEXT)
-  - `utc_offset_minutes` (INTEGER)
   - `is_active` (INTEGER - Boolean)
 
 ---
@@ -92,7 +92,7 @@ graph TD
     A[User Input/UI] -->|Trigger Action| B(Riverpod Provider)
     B -->|Request Data| C{Repository Layer}
     C -->|Fetch Offline Data| D[(Local SQLite/Hive DB)]
-    C -->|Fetch Live Data API Fallback| E[Astrology Services]
+    C -->|Calculate Offline| E[Ephemeris/Astrology Engine]
     D -->|Return Data| C
     E -->|Return Data| C
     C -->|Update State| B
@@ -107,9 +107,8 @@ graph TD
 - **State Management:** [Riverpod](https://riverpod.dev/) (`flutter_riverpod`, `riverpod_annotation`)
 - **Routing:** [GoRouter](https://pub.dev/packages/go_router)
 - **Local Database:** [SQFlite](https://pub.dev/packages/sqflite), [Hive](https://pub.dev/packages/hive)
-- **Local Storage/Preferences:** `shared_preferences`, `flutter_secure_storage`
-- **Animations:** `flutter_animate`, `lottie`, custom `CustomPainter` implementations
-- **Networking:** `dio` (for specific online fallbacks)
+- **Astrology Engine:** [sweph](https://pub.dev/packages/sweph) (Swiss Ephemeris port)
+- **Animations:** `flutter_animate`, custom `CustomPainter` implementations
 - **Code Generation:** `freezed`, `json_serializable`, `build_runner`
 
 ---
@@ -124,7 +123,7 @@ graph TD
 ### Installation Steps
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/CosmicVed.git
+   git clone https://github.com/karanks6/CosmicVed.git
    cd CosmicVed
    ```
 
@@ -137,7 +136,7 @@ graph TD
 3. **Run Code Generation**
    Since the project uses `freezed` and `riverpod_annotation`, you need to generate the necessary files.
    ```bash
-   flutter pub run build_runner build --delete-conflicting-outputs
+   dart run build_runner build --delete-conflicting-outputs
    ```
 
 4. **Run the App**
