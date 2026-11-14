@@ -1,6 +1,6 @@
 # CosmicVed — Vedic Astrology & Numerology Companion
 
-![CosmicVed Logo](assets/icon/CosmicVed_logo.png)
+<img src="assets/icon/CosmicVed_logo.png" alt="CosmicVed Logo" width="120" />
 
 **CosmicVed** is a beautifully designed, premium Flutter application that bridges the gap between ancient Vedic wisdom and modern technology. Crafted with a focus on deep astrological accuracy, stunning aesthetics, and absolute privacy, CosmicVed offers users a personalized window into their cosmic and numerological profiles.
 
